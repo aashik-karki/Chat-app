@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { ApiError, authApi } from '../lib/api'
+import { useChatStore } from './chatStore'
 import type { AuthUser, PendingUser } from '../types/auth'
 
 type AuthState = 'checking' | 'anonymous' | 'authenticated' | 'pending'
@@ -35,7 +36,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     try { const result = await authApi.register(name, email, password, get().csrfToken ?? undefined); set({ ...applyUser(result.data, result.csrfToken), state: 'pending' }) }
     catch (error) { const message = error instanceof Error ? error.message : 'Unable to register.'; set({ error: message }); throw error }
   },
-  logout: async () => { try { await authApi.logout(get().csrfToken ?? undefined) } finally { set({ state: 'anonymous', user: null, csrfToken: null, error: null }) } },
+  logout: async () => { try { await authApi.logout(get().csrfToken ?? undefined) } finally { set({ state: 'anonymous', user: null, csrfToken: null, error: null }); useChatStore.getState().reset() } },
   pendingUsers: async () => authApi.pendingUsers(get().csrfToken ?? undefined),
   setUserStatus: async (id, status) => { await authApi.setUserStatus(id, status, get().csrfToken ?? undefined) },
 }))

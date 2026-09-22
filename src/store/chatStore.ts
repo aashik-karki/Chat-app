@@ -1,16 +1,27 @@
 import { create } from 'zustand'
-import { CURRENT_USER_ID, demoConversations, demoMessages } from '../data/demoChat'
+import { chatApi } from '../lib/chatApi'
+import { formatClockTime } from '../lib/time'
 import type { ChatMessage, ConnectionState, Conversation, MessageStatus, PresenceUpdate } from '../types/chat'
 
 interface ChatStore {
-  activeConversationId: string
+  // The signed-in user's own id, used to tell "my messages" apart from the
+  // other side's. Set once, right after login (see ChatPage), because the
+  // store's own logic (addMessage, markConversationRead, ...) runs outside
+  // React and can't read the auth store's hook directly.
+  currentUserId: string | null
+  activeConversationId: string | null
   conversations: Conversation[]
+  conversationsLoaded: boolean
+  loadedHistoryFor: Record<string, boolean>
   messages: Record<string, ChatMessage[]>
   connection: ConnectionState
   reconnectAttempt: number
   error: string | null
   typingByConversation: Record<string, string[]>
   notificationPermission: NotificationPermission | 'unsupported'
+  setCurrentUserId: (userId: string) => void
+  loadConversations: (viewerRole: 'admin' | 'user') => Promise<void>
+  loadMessageHistory: (conversationId: string) => Promise<void>
   setActiveConversation: (conversationId: string) => void
   setConnection: (connection: ConnectionState, reconnectAttempt?: number) => void
   setError: (error: string | null) => void
@@ -21,6 +32,8 @@ interface ChatStore {
   setTyping: (conversationId: string, userIds: string[]) => void
   applyPresence: (update: PresenceUpdate) => void
   setNotificationPermission: (permission: NotificationPermission | 'unsupported') => void
+  /** Clears all chat state on sign-out so the next signed-in user never sees a previous account's messages. */
+  reset: () => void
 }
 
 const moveConversationToTop = (conversations: Conversation[], conversationId: string, preview: string, time: string) => {
@@ -29,15 +42,50 @@ const moveConversationToTop = (conversations: Conversation[], conversationId: st
   return [{ ...target, lastMessagePreview: preview, lastMessageAt: time }, ...conversations.filter((conversation) => conversation.id !== conversationId)]
 }
 
-export const useChatStore = create<ChatStore>((set, get) => ({
-  activeConversationId: 'design-team',
-  conversations: demoConversations,
-  messages: demoMessages,
-  connection: 'offline',
+const initialState = {
+  currentUserId: null as string | null,
+  activeConversationId: null as string | null,
+  conversations: [] as Conversation[],
+  conversationsLoaded: false,
+  loadedHistoryFor: {} as Record<string, boolean>,
+  messages: {} as Record<string, ChatMessage[]>,
+  connection: 'offline' as ConnectionState,
   reconnectAttempt: 0,
-  error: null,
-  typingByConversation: {},
-  notificationPermission: typeof Notification === 'undefined' ? 'unsupported' : Notification.permission,
+  error: null as string | null,
+  typingByConversation: {} as Record<string, string[]>,
+  notificationPermission: (typeof Notification === 'undefined' ? 'unsupported' : Notification.permission) as NotificationPermission | 'unsupported',
+}
+
+export const useChatStore = create<ChatStore>((set, get) => ({
+  ...initialState,
+  setCurrentUserId: (currentUserId) => set({ currentUserId }),
+  loadConversations: async (viewerRole) => {
+    try {
+      const conversations = await chatApi.listConversations(viewerRole)
+      set((state) => ({
+        conversations,
+        conversationsLoaded: true,
+        // Keep whatever's already active if it still exists, otherwise default to the first thread.
+        activeConversationId: conversations.some((conversation) => conversation.id === state.activeConversationId)
+          ? state.activeConversationId
+          : (conversations[0]?.id ?? null),
+      }))
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Unable to load conversations.' })
+    }
+  },
+  loadMessageHistory: async (conversationId) => {
+    if (get().loadedHistoryFor[conversationId]) return
+    try {
+      const page = await chatApi.getMessageHistory(conversationId)
+      set((state) => ({
+        messages: { ...state.messages, [conversationId]: page.messages },
+        loadedHistoryFor: { ...state.loadedHistoryFor, [conversationId]: true },
+      }))
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Unable to load message history.' })
+    }
+  },
   setActiveConversation: (conversationId) => {
     set({ activeConversationId: conversationId })
     get().markConversationRead(conversationId)
@@ -51,9 +99,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     const existingMessages = state.messages[message.conversationId] ?? []
     const duplicate = existingMessages.some((existing) => existing.id === message.id || (message.clientId && existing.clientId === message.clientId))
     if (duplicate) return state
-    const isIncoming = message.senderId !== CURRENT_USER_ID
+    const isIncoming = message.senderId !== state.currentUserId
     const isActive = state.activeConversationId === message.conversationId
-    const time = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(new Date(message.createdAt))
+    const time = formatClockTime(message.createdAt)
     return {
       messages: { ...state.messages, [message.conversationId]: [...existingMessages, message] },
       conversations: moveConversationToTop(
@@ -75,7 +123,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   })),
   markConversationRead: (conversationId, readAt = new Date().toISOString()) => set((state) => {
     const currentMessages = state.messages[conversationId] ?? []
-    const hasUnreadMessages = currentMessages.some((message) => message.senderId !== CURRENT_USER_ID && message.status !== 'read')
+    const hasUnreadMessages = currentMessages.some((message) => message.senderId !== state.currentUserId && message.status !== 'read')
     const hasUnreadCount = state.conversations.some((conversation) => conversation.id === conversationId && conversation.unreadCount > 0)
     // Avoid rewriting state for an already-confirmed receipt; this also prevents receipt echo loops.
     if (!hasUnreadMessages && !hasUnreadCount) return state
@@ -83,7 +131,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       conversations: state.conversations.map((conversation) => conversation.id === conversationId ? { ...conversation, unreadCount: 0 } : conversation),
       messages: {
         ...state.messages,
-        [conversationId]: currentMessages.map((message) => message.senderId === CURRENT_USER_ID ? message : { ...message, status: 'read', readAt }),
+        [conversationId]: currentMessages.map((message) => message.senderId === state.currentUserId ? message : { ...message, status: 'read', readAt }),
       },
     }
   }),
@@ -97,6 +145,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     ),
   })),
   setNotificationPermission: (notificationPermission) => set({ notificationPermission }),
+  reset: () => set({ ...initialState }),
 }))
 
 export const statusRank: Record<MessageStatus, number> = { sending: 0, failed: 0, sent: 1, delivered: 2, read: 3 }

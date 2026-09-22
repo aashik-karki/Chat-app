@@ -6,14 +6,13 @@ import {
   SendHorizontal, Settings2, ShieldCheck, Smile, WifiOff, X,
 } from 'lucide-react'
 import { avatarColorClass } from '../lib/avatarColor'
-import { CURRENT_USER_ID } from '../data/demoChat'
 import { chatSocket } from '../lib/socket'
 import { useRealtime } from '../hooks/useRealtime'
 import { useChatStore } from '../store/chatStore'
 import { useAuthStore } from '../store/authStore'
+import { formatClockTime as displayTime } from '../lib/time'
 import type { ChatMessage, Conversation, MessageStatus, PresenceState } from '../types/chat'
 
-const displayTime = (value: string) => new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(new Date(value))
 const EMPTY_TYPING_USERS: string[] = []
 
 // Shared avatar/presence-dot styling so every avatar size below only needs
@@ -43,13 +42,13 @@ function csvCell(value: string | number) {
   return `"${String(value).replaceAll('"', '""')}"`
 }
 
-function exportMessages(conversation: Conversation, messages: ChatMessage[], format: 'json' | 'csv') {
+function exportMessages(conversation: Conversation, messages: ChatMessage[], format: 'json' | 'csv', currentUserId: string | null) {
   const fileBase = `${conversation.user.name.toLowerCase().replaceAll(/[^a-z0-9]+/g, '-')}-chat-history`
   const content = format === 'json'
     ? JSON.stringify({ exportedAt: new Date().toISOString(), conversation: conversation.user.name, messages }, null, 2)
     : [
       'id,sender,message,timestamp,status,delivered_at,read_at',
-      ...messages.map((message) => [message.id, message.senderId === CURRENT_USER_ID ? 'You' : conversation.user.name, message.text, message.createdAt, message.status, message.deliveredAt ?? '', message.readAt ?? ''].map(csvCell).join(',')),
+      ...messages.map((message) => [message.id, message.senderId === currentUserId ? 'You' : conversation.user.name, message.text, message.createdAt, message.status, message.deliveredAt ?? '', message.readAt ?? ''].map(csvCell).join(',')),
     ].join('\n')
   const blob = new Blob([content], { type: format === 'json' ? 'application/json' : 'text/csv;charset=utf-8' })
   const href = URL.createObjectURL(blob)
@@ -66,6 +65,45 @@ function base64ToUint8Array(base64: string) {
   return Uint8Array.from(raw, (character) => character.charCodeAt(0))
 }
 
+function ChatLoadingState() {
+  return (
+    <main className="grid min-h-svh place-items-center bg-[#fcfcfd] font-sans text-[#2c2935]">
+      <p className="text-xs font-semibold text-[#8a8491]">Loading your conversations…</p>
+    </main>
+  )
+}
+
+/**
+ * Shown once conversations have loaded but there's nothing to display yet —
+ * a new admin account before any customer has written in, most commonly. A
+ * new customer normally doesn't hit this: their support thread is created
+ * as soon as the socket connects (see the "refresh on reconnect" effect in
+ * ChatPage below).
+ */
+function ChatEmptyState({ isAdmin, onSignOut }: { isAdmin: boolean; onSignOut: () => void }) {
+  return (
+    <main className="grid min-h-svh place-items-center bg-[#fcfcfd] px-6 font-sans text-[#2c2935]">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <p className="text-sm font-semibold text-[#4b4551]">
+          {isAdmin ? 'No conversations yet' : 'Connecting you to support…'}
+        </p>
+        <p className="max-w-xs text-xs text-[#948e9b]">
+          {isAdmin
+            ? 'Once a customer starts a conversation, it will show up here automatically.'
+            : 'This should only take a moment. If it doesn’t, try refreshing the page.'}
+        </p>
+        <button
+          type="button"
+          className="mt-1 rounded-md border border-[#dedbe5] bg-white px-3 py-2 text-xs font-semibold text-[#5f5767] hover:border-[#cfc6ed]"
+          onClick={onSignOut}
+        >
+          Sign out
+        </button>
+      </div>
+    </main>
+  )
+}
+
 /**
  * The main chat experience at "/". Reachable only through the
  * `RequireApprovedUser` route guard, so it can assume an authenticated,
@@ -75,42 +113,77 @@ export function ChatPage() {
   const authUser = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
   const conversations = useChatStore((state) => state.conversations)
+  const conversationsLoaded = useChatStore((state) => state.conversationsLoaded)
   const messagesByConversation = useChatStore((state) => state.messages)
   const activeConversationId = useChatStore((state) => state.activeConversationId)
   const connection = useChatStore((state) => state.connection)
   const reconnectAttempt = useChatStore((state) => state.reconnectAttempt)
-  const typingUsers = useChatStore((state) => state.typingByConversation[state.activeConversationId] ?? EMPTY_TYPING_USERS)
+  const typingUsers = useChatStore((state) => state.typingByConversation[state.activeConversationId ?? ''] ?? EMPTY_TYPING_USERS)
   const error = useChatStore((state) => state.error)
   const notificationPermission = useChatStore((state) => state.notificationPermission)
+  const setCurrentUserId = useChatStore((state) => state.setCurrentUserId)
+  const loadConversations = useChatStore((state) => state.loadConversations)
+  const loadMessageHistory = useChatStore((state) => state.loadMessageHistory)
   const setActiveConversation = useChatStore((state) => state.setActiveConversation)
   const setError = useChatStore((state) => state.setError)
   const setNotificationPermission = useChatStore((state) => state.setNotificationPermission)
-  const { sendMessage, retryMessage, notifyTyping, markRead, subscribe } = useRealtime(true)
+  const { sendMessage, retryMessage, notifyTyping, markRead, subscribe } = useRealtime(Boolean(authUser))
   const [draft, setDraft] = useState('')
   const [query, setQuery] = useState('')
   const [exportOpen, setExportOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const messageEnd = useRef<HTMLDivElement>(null)
   const textArea = useRef<HTMLTextAreaElement>(null)
+  const previousConnection = useRef(connection)
 
-  const activeConversation = conversations.find((conversation) => conversation.id === activeConversationId) ?? conversations[0]
-  const messages = useMemo(() => messagesByConversation[activeConversation.id] ?? [], [activeConversation.id, messagesByConversation])
-  const isDemo = !import.meta.env.VITE_SOCKET_URL
+  const currentUserId = authUser?.id ?? null
+  const isAdmin = authUser?.role === 'admin'
+  const activeConversation = conversations.find((conversation) => conversation.id === activeConversationId)
+  const messages = useMemo(
+    () => (activeConversation ? messagesByConversation[activeConversation.id] ?? [] : []),
+    [activeConversation, messagesByConversation],
+  )
   const filteredConversations = useMemo(() => {
     const filter = query.trim().toLowerCase()
     if (!filter) return conversations
     return conversations.filter((conversation) => conversation.user.name.toLowerCase().includes(filter) || conversation.lastMessagePreview.toLowerCase().includes(filter))
   }, [conversations, query])
 
+  // Identifies this session to the chat store and pulls down this account's
+  // conversations once, right after login.
+  useEffect(() => {
+    if (!authUser) return
+    setCurrentUserId(authUser.id)
+    void loadConversations(isAdmin ? 'admin' : 'user')
+  }, [authUser, isAdmin, loadConversations, setCurrentUserId])
+
+  // A brand-new customer's support thread is created lazily by the socket
+  // on first connect (see the backend's realtime/chat-gateway.ts), so the
+  // very first REST fetch above can land before it exists. Refreshing the
+  // list on every (re)connect picks it up without a page reload, and also
+  // surfaces newly-started customer threads to an admin's dashboard.
+  useEffect(() => {
+    if (connection === 'connected' && previousConnection.current !== 'connected' && authUser) {
+      void loadConversations(isAdmin ? 'admin' : 'user')
+    }
+    previousConnection.current = connection
+  }, [authUser, connection, isAdmin, loadConversations])
+
   useEffect(() => {
     messageEnd.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [activeConversationId, messages.length, typingUsers.length])
 
   useEffect(() => {
+    if (!activeConversationId) return
+    void loadMessageHistory(activeConversationId)
     subscribe(activeConversationId)
-    const newestIncoming = [...messages].reverse().find((message) => message.senderId !== CURRENT_USER_ID)
+  }, [activeConversationId, loadMessageHistory, subscribe])
+
+  useEffect(() => {
+    if (!activeConversationId || !currentUserId) return
+    const newestIncoming = [...messages].reverse().find((message) => message.senderId !== currentUserId)
     if (newestIncoming) markRead(activeConversationId, newestIncoming.id)
-  }, [activeConversationId, markRead, messages, subscribe])
+  }, [activeConversationId, currentUserId, markRead, messages])
 
   const changeConversation = (conversationId: string) => {
     setActiveConversation(conversationId)
@@ -119,7 +192,7 @@ export function ChatPage() {
   }
 
   const submitMessage = () => {
-    if (!draft.trim()) return
+    if (!draft.trim() || !activeConversation) return
     sendMessage(activeConversation.id, draft)
     setDraft('')
     textArea.current?.focus()
@@ -158,13 +231,21 @@ export function ChatPage() {
     }
   }
 
-  const connectionText = isDemo ? 'Demo mode' : connection === 'connected' ? 'Live' : connection === 'reconnecting' ? `Reconnecting · ${reconnectAttempt}` : 'Offline'
+  const connectionText = connection === 'connected' ? 'Live' : connection === 'reconnecting' ? `Reconnecting · ${reconnectAttempt}` : 'Offline'
   const connectionPillClass = connection === 'connected'
     ? 'bg-[#ebf8f1] text-[#358563]'
     : connection === 'reconnecting'
       ? 'bg-[#fff7e8] text-[#ba7920]'
       : 'bg-[#f3f2f5] text-[#8a8491]'
   const connectionDotClass = connection === 'connected' ? 'bg-[#4bb78a]' : connection === 'reconnecting' ? 'bg-[#eab050]' : 'bg-[#b2adb8]'
+
+  if (!conversationsLoaded) {
+    return <ChatLoadingState />
+  }
+
+  if (!activeConversation) {
+    return <ChatEmptyState isAdmin={isAdmin} onSignOut={() => void logout()} />
+  }
 
   return (
     <main className="grid min-h-svh overflow-hidden bg-[#fcfcfd] font-sans text-[#2c2935] [grid-template-columns:300px_minmax(440px,1fr)_277px] max-[1060px]:[grid-template-columns:270px_minmax(420px,1fr)] max-[720px]:block">
@@ -308,7 +389,7 @@ export function ChatPage() {
           <div className="ml-auto flex items-center gap-2 max-[720px]:gap-[2px]">
             <span
               className={`mr-[5px] flex items-center gap-[5px] rounded-[20px] px-2 py-[5px] font-sans text-[9px] font-semibold max-[720px]:mr-0 ${connectionPillClass}`}
-              title={isDemo ? 'Set VITE_SOCKET_URL to connect a Socket.IO server' : connectionText}
+              title={connectionText}
             >
               <i className={`h-[6px] w-[6px] rounded-full ${connectionDotClass}`} />
               {connectionText}
@@ -329,7 +410,7 @@ export function ChatPage() {
           </div>
           <div className="mx-auto max-w-[725px] px-[30px] pb-7 max-[720px]:px-[15px] max-[720px]:pb-[18px]" aria-live="polite">
             {messages.map((message, index) => {
-              const own = message.senderId === CURRENT_USER_ID
+              const own = message.senderId === currentUserId
               const prior = messages[index - 1]
               const grouped = prior?.senderId === message.senderId
               return (
@@ -499,7 +580,7 @@ export function ChatPage() {
                 <button
                   type="button"
                   className="flex items-center gap-[9px] rounded-[5px] border-0 bg-transparent p-2 text-left text-[#746b7c] hover:bg-[#f3f1f8] hover:text-[#5d4eb4]"
-                  onClick={() => { exportMessages(activeConversation, messages, 'json'); setExportOpen(false) }}
+                  onClick={() => { exportMessages(activeConversation, messages, 'json', currentUserId); setExportOpen(false) }}
                 >
                   <FileJson size={16} />
                   <span>
@@ -510,7 +591,7 @@ export function ChatPage() {
                 <button
                   type="button"
                   className="flex items-center gap-[9px] rounded-[5px] border-0 bg-transparent p-2 text-left text-[#746b7c] hover:bg-[#f3f1f8] hover:text-[#5d4eb4]"
-                  onClick={() => { exportMessages(activeConversation, messages, 'csv'); setExportOpen(false) }}
+                  onClick={() => { exportMessages(activeConversation, messages, 'csv', currentUserId); setExportOpen(false) }}
                 >
                   <FileSpreadsheet size={16} />
                   <span>
@@ -524,7 +605,7 @@ export function ChatPage() {
         </div>
         <div className="flex items-center gap-1.5 py-[13px] font-sans text-[8.5px] text-[#a09aa5]">
           <span className={`h-1.5 w-1.5 rounded-full ${connectionDotClass}`} />
-          {isDemo ? 'Local preview — no server connected' : connection === 'connected' ? 'Synced in real time' : 'Changes will sync on reconnect'}
+          {connection === 'connected' ? 'Synced in real time' : 'Changes will sync on reconnect'}
         </div>
       </aside>
     </main>

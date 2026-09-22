@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { CURRENT_USER_ID } from '../data/demoChat'
 import { chatSocket } from '../lib/socket'
 import { useChatStore } from '../store/chatStore'
 import type { ChatMessage, SendMessagePayload } from '../types/chat'
@@ -46,8 +45,8 @@ export function useRealtime(enabled: boolean) {
       },
       onMessage: (message) => {
         useChatStore.getState().addMessage(message)
-        const activeConversationId = useChatStore.getState().activeConversationId
-        if (message.senderId !== CURRENT_USER_ID && message.conversationId === activeConversationId) {
+        const state = useChatStore.getState()
+        if (message.senderId !== state.currentUserId && message.conversationId === state.activeConversationId) {
           useChatStore.getState().markConversationRead(message.conversationId)
           chatSocket.markRead(message.conversationId, message.id)
         }
@@ -79,18 +78,16 @@ export function useRealtime(enabled: boolean) {
   const sendMessage = useCallback((conversationId: string, text: string) => {
     const trimmed = text.trim()
     if (!trimmed) return
+    const currentUserId = useChatStore.getState().currentUserId
+    if (!currentUserId) return
     const payload = { clientId: messageId(), conversationId, text: trimmed }
-    const optimistic: ChatMessage = { id: payload.clientId, clientId: payload.clientId, conversationId, senderId: CURRENT_USER_ID, text: trimmed, createdAt: new Date().toISOString(), status: 'sending' }
+    const optimistic: ChatMessage = { id: payload.clientId, clientId: payload.clientId, conversationId, senderId: currentUserId, text: trimmed, createdAt: new Date().toISOString(), status: 'sending' }
     useChatStore.getState().addMessage(optimistic)
-    if (chatSocket.isConnected) void deliver(payload)
-    else {
-      // The interface remains usable in local demo mode while showing the offline state clearly.
-      if (!import.meta.env.VITE_SOCKET_URL) {
-        window.setTimeout(() => useChatStore.getState().updateMessage(conversationId, payload.clientId, { status: 'delivered', deliveredAt: new Date().toISOString() }), 550)
-      } else {
-        pendingMessages.current.push(payload)
-        useChatStore.getState().updateMessage(conversationId, payload.clientId, { status: 'failed', failureReason: 'Waiting for connection' })
-      }
+    if (chatSocket.isConnected) {
+      void deliver(payload)
+    } else {
+      pendingMessages.current.push(payload)
+      useChatStore.getState().updateMessage(conversationId, payload.clientId, { status: 'failed', failureReason: 'Waiting for connection' })
     }
   }, [deliver])
 
