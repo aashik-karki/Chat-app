@@ -7,6 +7,40 @@
   --color-orbit: #7863d8;
   --color-orbit-soft: #eeebfb;
   --color-ink: #2c2935;
+
+  /* shadcn/ui tokens, mapped onto the app's existing "orbit" brand color
+     rather than the library's default neutral palette, so components built
+     from src/components/ui/* (Avatar, Badge, ScrollArea, ...) match the
+     rest of the app instead of looking like a bolted-on second theme. */
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+}
+
+:root {
+  --border: #e6e4e9;
+  --input: #ded9e7;
+  --ring: #9c8de6;
+  --background: #fcfcfd;
+  --foreground: #2c2935;
+  --primary: #7863d8;
+  --primary-foreground: #ffffff;
+  --secondary: #eeebfb;
+  --secondary-foreground: #453d54;
+  --muted: #f4f2f6;
+  --muted-foreground: #948e9b;
+  --accent: #f0eef5;
+  --accent-foreground: #302b37;
 }
 
 @layer base {

@@ -6,6 +6,7 @@ import {
   SendHorizontal, Settings2, ShieldCheck, Smile, WifiOff, X,
 } from 'lucide-react'
 import { avatarColorClass } from '../lib/avatarColor'
+import { ConversationList } from '../components/ConversationList'
 import { chatSocket } from '../lib/socket'
 import { useRealtime } from '../hooks/useRealtime'
 import { useChatStore } from '../store/chatStore'
@@ -277,52 +278,19 @@ export function ChatPage() {
           <ChevronDown size={16} />
         </div>
 
-        <div className="min-h-0 flex-1 px-3 pb-[10px] pt-[25px]">
-          <div className="flex items-center justify-between px-2 pb-[11px] font-sans text-[11px] font-bold uppercase tracking-[.7px] text-[#56515e]">
-            <span>Messages</span>
-            <button type="button" className="grid place-items-center rounded-[7px] border-0 bg-transparent p-[2px] text-[#817b8c] transition-colors hover:bg-[#f0eef5] hover:text-[#453d54]" aria-label="Message settings">
-              <Settings2 size={16} />
-            </button>
-          </div>
-          <label className="mb-[14px] flex h-9 items-center gap-[7px] rounded-lg border border-[#e6e4e9] bg-white px-[9px] text-[#a6a1ad] focus-within:border-[#9c8de6] focus-within:shadow-[0_0_0_3px_rgba(120,99,219,.09)]">
-            <Search size={16} />
-            <input
-              className="w-full min-w-0 border-0 bg-transparent text-[11px] text-[#47414e] outline-none placeholder:text-[#aaa5b0]"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search messages"
-              aria-label="Search messages"
-            />
-            <kbd className="font-mono text-[9px] text-[#9d98a5]">⌘ K</kbd>
-          </label>
-          <div className="flex max-h-[calc(100svh-294px)] flex-col gap-[2px] overflow-y-auto [scrollbar-width:thin]">
-            {filteredConversations.map((conversation) => (
-              <button
-                key={conversation.id}
-                type="button"
-                className={`grid w-full items-center gap-[9px] rounded-lg border-0 bg-transparent px-2 py-[9px] text-left text-[#302c38] transition-colors hover:bg-[#f2f0f5] [grid-template-columns:34px_minmax(0,1fr)_auto] ${conversation.id === activeConversation.id ? 'bg-orbit-soft hover:bg-orbit-soft' : ''}`}
-                onClick={() => changeConversation(conversation.id)}
-              >
-                <div className={`${avatarBase} h-[34px] w-[34px] text-[10px] ${avatarColorClass(conversation.user.id)}`}>
-                  {conversation.user.initials}
-                  <i className={presenceDot(conversation.user.presence)} />
-                </div>
-                <span className="block overflow-hidden">
-                  <span className="block overflow-hidden text-ellipsis whitespace-nowrap font-sans text-[12px]/[17px] font-semibold text-[#3b3542]">{conversation.user.name}</span>
-                  <span className="block overflow-hidden text-ellipsis whitespace-nowrap font-sans text-[10.5px]/[15px] text-[#9b96a1]">{conversation.lastMessagePreview}</span>
-                </span>
-                <span className="flex flex-col items-end gap-[6px] self-start font-sans text-[9px]/[14px] text-[#aaa5b0]">
-                  <span>{conversation.lastMessageAt}</span>
-                  {conversation.unreadCount > 0 && (
-                    <b className="grid h-[17px] min-w-[17px] place-items-center rounded-[20px] bg-orbit px-1 font-sans text-[9px] font-bold text-white">
-                      {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
-                    </b>
-                  )}
-                </span>
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center justify-between px-5 pb-[11px] pt-[18px] font-sans text-[11px] font-bold uppercase tracking-[.7px] text-[#56515e]">
+          <span>Messages</span>
+          <button type="button" className="grid place-items-center rounded-[7px] border-0 bg-transparent p-[2px] text-[#817b8c] transition-colors hover:bg-[#f0eef5] hover:text-[#453d54]" aria-label="Message settings">
+            <Settings2 size={16} />
+          </button>
         </div>
+        <ConversationList
+          conversations={filteredConversations}
+          activeConversationId={activeConversation.id}
+          query={query}
+          onQueryChange={setQuery}
+          onSelect={changeConversation}
+        />
 
         <div className="border-t border-[#ecebf0] p-3">
           <button
