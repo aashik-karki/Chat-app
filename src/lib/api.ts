@@ -48,11 +48,22 @@ async function fetchCsrfToken() {
 
 const withCsrf = async (csrfToken?: string) => csrfToken ?? csrfFromCookie() ?? fetchCsrfToken()
 
+// The backend wraps auth responses as `{ user: {...} }` rather than the
+// generic `{ data: ... }` envelope `unwrap` otherwise understands, so these
+// calls unwrap that one extra layer themselves.
+const unwrapUser = (result: { data: { user: AuthUser }; csrfToken?: string }) => ({ data: result.data.user, csrfToken: result.csrfToken })
+
 export const authApi = {
-  session: () => request<AuthUser>(sessionPath),
-  login: async (email: string, password: string, csrfToken?: string) => request<AuthUser>('/api/v1/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }, await withCsrf(csrfToken)),
-  register: async (name: string, email: string, password: string, csrfToken?: string) => request<AuthUser>('/api/v1/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password }) }, await withCsrf(csrfToken)),
+  session: async () => unwrapUser(await request<{ user: AuthUser }>(sessionPath)),
+  login: async (email: string, password: string, csrfToken?: string) =>
+    unwrapUser(await request<{ user: AuthUser }>('/api/v1/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }, await withCsrf(csrfToken))),
+  register: async (name: string, email: string, password: string, csrfToken?: string) =>
+    unwrapUser(await request<{ user: AuthUser }>('/api/v1/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password }) }, await withCsrf(csrfToken))),
   logout: async (csrfToken?: string) => request<null>('/api/v1/auth/logout', { method: 'POST' }, await withCsrf(csrfToken)),
-  pendingUsers: (csrfToken?: string) => request<PendingUser[]>(`${adminUsersPath}/pending`, {}, csrfToken),
-  setUserStatus: async (id: string, status: 'approved' | 'rejected', csrfToken?: string) => request<AuthUser>(`${adminUsersPath}/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, await withCsrf(csrfToken)),
+  pendingUsers: async (csrfToken?: string) => {
+    const result = await request<{ users: PendingUser[] }>(`${adminUsersPath}?status=pending`, {}, csrfToken)
+    return result.data.users
+  },
+  setUserStatus: async (id: string, status: 'approved' | 'rejected', csrfToken?: string) =>
+    unwrapUser(await request<{ user: AuthUser }>(`${adminUsersPath}/${id}/approval`, { method: 'PATCH', body: JSON.stringify({ status }) }, await withCsrf(csrfToken))),
 }

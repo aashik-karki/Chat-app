@@ -36,6 +36,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     catch (error) { const message = error instanceof Error ? error.message : 'Unable to register.'; set({ error: message }); throw error }
   },
   logout: async () => { try { await authApi.logout(get().csrfToken ?? undefined) } finally { set({ state: 'anonymous', user: null, csrfToken: null, error: null }) } },
-  pendingUsers: async () => (await authApi.pendingUsers(get().csrfToken ?? undefined)).data,
+  pendingUsers: async () => authApi.pendingUsers(get().csrfToken ?? undefined),
   setUserStatus: async (id, status) => { await authApi.setUserStatus(id, status, get().csrfToken ?? undefined) },
 }))

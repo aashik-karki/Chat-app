@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -10,9 +11,15 @@
 
 @layer base {
   :root { font-synthesis:none; text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased; }
+  * { box-sizing: border-box; }
   body { @apply m-0 min-w-80 bg-[#fcfcfd] font-sans text-[#2c2935]; }
   button, input, textarea { font: inherit; }
   button { @apply cursor-pointer; }
   button:focus-visible, input:focus-visible, textarea:focus-visible { @apply outline-2 outline-offset-2 outline-orbit; }
   #root { @apply min-h-svh; }
+}
+
+@keyframes typing {
+  0%, 60%, 100% { transform: translateY(0); opacity: .4; }
+  30% { transform: translateY(-3px); opacity: 1; }
 }

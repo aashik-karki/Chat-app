@@ -6,7 +6,6 @@ export interface ChatUser {
   id: string
   name: string
   initials: string
-  color: string
   presence: PresenceState
   lastSeen?: string
 }
