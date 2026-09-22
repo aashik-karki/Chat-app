@@ -32,7 +32,8 @@ class ChatSocket {
       reconnectionDelay: 700,
       reconnectionDelayMax: 8000,
       randomizationFactor: 0.4,
-      auth: { token: import.meta.env.VITE_SOCKET_TOKEN },
+      // The backend authenticates the handshake from its HttpOnly session cookie.
+      withCredentials: true,
     })
     this.socket.on('connect', () => {
       handlers.onConnection('connected')

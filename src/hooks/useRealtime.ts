@@ -6,7 +6,7 @@ import type { ChatMessage, SendMessagePayload } from '../types/chat'
 
 const messageId = () => typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`
 
-export function useRealtime() {
+export function useRealtime(enabled: boolean) {
   const pendingMessages = useRef<SendMessagePayload[]>([])
   const typingTimer = useRef<number | undefined>(undefined)
   const typingActive = useRef(false)
@@ -29,6 +29,11 @@ export function useRealtime() {
   }, [])
 
   useEffect(() => {
+    if (!enabled) {
+      chatSocket.stop()
+      useChatStore.getState().setConnection('offline')
+      return
+    }
     chatSocket.start({
       onConnection: (connection, attempt) => {
         useChatStore.getState().setConnection(connection, attempt)
@@ -69,7 +74,7 @@ export function useRealtime() {
       if (typingTimer.current) window.clearTimeout(typingTimer.current)
       chatSocket.stop()
     }
-  }, [deliver])
+  }, [deliver, enabled])
 
   const sendMessage = useCallback((conversationId: string, text: string) => {
     const trimmed = text.trim()

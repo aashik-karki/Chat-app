@@ -4,10 +4,13 @@ import {
   FileJson, FileSpreadsheet, Info, Menu, MoreHorizontal, Paperclip, Search,
   SendHorizontal, Settings2, Smile, WifiOff, X,
 } from 'lucide-react'
+import { AuthScreen } from './components/AuthScreen'
+import { PendingUsers } from './components/PendingUsers'
 import { CURRENT_USER_ID } from './data/demoChat'
 import { chatSocket } from './lib/socket'
 import { useRealtime } from './hooks/useRealtime'
 import { useChatStore } from './store/chatStore'
+import { useAuthStore } from './store/authStore'
 import type { ChatMessage, Conversation, MessageStatus } from './types/chat'
 import './App.css'
 
@@ -57,6 +60,15 @@ function base64ToUint8Array(base64: string) {
 }
 
 function App() {
+  const authState = useAuthStore((state) => state.state)
+  const authUser = useAuthStore((state) => state.user)
+  const authError = useAuthStore((state) => state.error)
+  const restoreAuth = useAuthStore((state) => state.restore)
+  const login = useAuthStore((state) => state.login)
+  const register = useAuthStore((state) => state.register)
+  const logout = useAuthStore((state) => state.logout)
+  const loadPendingUsers = useAuthStore((state) => state.pendingUsers)
+  const setUserStatus = useAuthStore((state) => state.setUserStatus)
   const conversations = useChatStore((state) => state.conversations)
   const messagesByConversation = useChatStore((state) => state.messages)
   const activeConversationId = useChatStore((state) => state.activeConversationId)
@@ -68,13 +80,15 @@ function App() {
   const setActiveConversation = useChatStore((state) => state.setActiveConversation)
   const setError = useChatStore((state) => state.setError)
   const setNotificationPermission = useChatStore((state) => state.setNotificationPermission)
-  const { sendMessage, retryMessage, notifyTyping, markRead, subscribe } = useRealtime()
+  const { sendMessage, retryMessage, notifyTyping, markRead, subscribe } = useRealtime(authState === 'authenticated')
   const [draft, setDraft] = useState('')
   const [query, setQuery] = useState('')
   const [exportOpen, setExportOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const messageEnd = useRef<HTMLDivElement>(null)
   const textArea = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => { void restoreAuth() }, [restoreAuth])
 
   const activeConversation = conversations.find((conversation) => conversation.id === activeConversationId) ?? conversations[0]
   const messages = useMemo(() => messagesByConversation[activeConversation.id] ?? [], [activeConversation.id, messagesByConversation])
@@ -143,6 +157,9 @@ function App() {
 
   const connectionText = isDemo ? 'Demo mode' : connection === 'connected' ? 'Live' : connection === 'reconnecting' ? `Reconnecting · ${reconnectAttempt}` : 'Offline'
 
+  if (authState === 'checking') return <main className="auth-shell"><p className="auth-loading">Checking your session…</p></main>
+  if (authState !== 'authenticated') return <AuthScreen error={authError} pendingUser={authState === 'pending' ? authUser : null} onLogin={login} onRegister={register} />
+
   return (
     <main className="chat-shell">
       <aside className={`sidebar ${mobileMenuOpen ? 'sidebar--open' : ''}`} aria-label="Conversations">
@@ -191,7 +208,7 @@ function App() {
             <span><strong>{notificationPermission === 'granted' ? 'Notifications on' : 'Stay in the loop'}</strong><small>{notificationPermission === 'granted' ? 'Background alerts enabled' : 'Enable desktop alerts'}</small></span>
           </button>
           <div className="account-row">
-            <div className="avatar avatar--me">AR</div><span><strong>Ash Rivera</strong><small>ash@atlas.co</small></span><button className="icon-button" type="button" aria-label="Account menu"><MoreHorizontal size={18} /></button>
+            <div className="avatar avatar--me">{authUser?.name.slice(0, 2).toUpperCase()}</div><span><strong>{authUser?.name}</strong><small>{authUser?.email}</small></span><button className="icon-button" type="button" aria-label="Sign out" onClick={() => void logout()}><X size={18} /></button>
           </div>
         </div>
       </aside>
@@ -270,6 +287,7 @@ function App() {
             {exportOpen && <div className="export-menu"><button type="button" onClick={() => { exportMessages(activeConversation, messages, 'json'); setExportOpen(false) }}><FileJson size={16} /><span>JSON<small>Full metadata</small></span></button><button type="button" onClick={() => { exportMessages(activeConversation, messages, 'csv'); setExportOpen(false) }}><FileSpreadsheet size={16} /><span>CSV<small>Spreadsheet ready</small></span></button></div>}
           </div>
         </div>
+        {authUser?.role === 'admin' && <PendingUsers load={loadPendingUsers} update={setUserStatus} />}
         <div className="details-footer"><span className={`status-dot status-dot--${connection}`} />{isDemo ? 'Local preview — no server connected' : connection === 'connected' ? 'Synced in real time' : 'Changes will sync on reconnect'}</div>
       </aside>
     </main>
