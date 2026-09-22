@@ -1,75 +1,42 @@
-# React + TypeScript + Vite
+# Orbit chat
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A responsive React chat client with Socket.IO transport, optimistic messages, delivery/read receipts, typing signals, presence, JSON/CSV export, and Web Push registration.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Without configuration it runs as an interactive local demo. Set the variables below to attach a Socket.IO server:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+VITE_SOCKET_URL=https://chat.example.com
+VITE_SOCKET_TOKEN=your-session-token
+VITE_VAPID_PUBLIC_KEY=your-url-safe-base64-vapid-public-key
 ```
+
+`VITE_VAPID_PUBLIC_KEY` is only required when enabling background Web Push. The service worker is served from `public/sw.js`.
+
+## Realtime contract
+
+Authentication is sent in the Socket.IO `auth` object. The client emits:
+
+| Event | Payload | Purpose |
+| --- | --- | --- |
+| `conversation:join` | `{ conversationId }` | Subscribe to a conversation |
+| `message:send` | `{ clientId, conversationId, text }` | Send an idempotent message; acknowledge with message metadata |
+| `message:read` | `{ conversationId, lastMessageId }` | Atomically advance the reader’s cursor |
+| `typing:set` | `{ conversationId, isTyping }` | Ephemeral, volatile typing state |
+| `push:subscribe` | PushSubscription JSON | Store/update a browser subscription |
+
+It listens for `message:new`, `message:status`, `presence:update`, `typing:update`, and `conversation:unread`. A server should deduplicate `message:send` by `clientId`, persist receipts transactionally, calculate unread totals as the authority, and broadcast updated presence/receipts to every participant.
+
+## Reliability notes
+
+- Messages render optimistically and are retried after reconnect with their original client ID.
+- The Socket.IO client uses websocket first, polling fallback, jittered reconnects, and acknowledgement timeouts.
+- Read receipts are idempotent and queued while offline.
+- Typing emits at most one start signal per typing burst and a debounced stop after 1.2 seconds.
+- Web Push uses the standard permission flow and surfaces configuration/permission failures in the UI.
