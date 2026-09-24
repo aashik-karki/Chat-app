@@ -21,6 +21,8 @@
   --success: #16a34a;
   --warning: #d97706;
   --danger: #dc2626;
+  --chart-series: #4f46e5; /* validated vs #ffffff (dataviz validator) */
+  --chart-grid: #e9ebf2;
   color-scheme: light;
 }
 
@@ -41,6 +43,8 @@
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #f87171;
+  --chart-series: #7075f4; /* validated vs #151823 */
+  --chart-grid: #252a3a;
   color-scheme: dark;
 }
 
@@ -62,6 +66,26 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
+  --color-chart-series: var(--chart-series);
+  --color-chart-grid: var(--chart-grid);
+
+  /* shadcn/ui token names (src/components/shadcn), mapped onto the same design tokens
+     so shadcn components and the app's own UI kit look like one system, in light AND dark.
+     Note: "muted" is the app's secondary TEXT color, so shadcn files use bg-surface-2 instead of bg-muted. */
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--fg);
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-ring: var(--primary);
+  --color-primary-foreground: var(--primary-fg);
+  --color-secondary: var(--surface-2);
+  --color-secondary-foreground: var(--fg);
+  --color-accent: var(--surface-2);
+  --color-accent-foreground: var(--fg);
+  --color-muted-foreground: var(--muted);
+  --color-destructive: var(--danger);
 }
 
 @layer base {
