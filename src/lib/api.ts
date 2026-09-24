@@ -1,4 +1,4 @@
-import type { AuthUser, PendingUser } from '../types/auth'
+import type { AuthUser } from '../types/auth'
 import { request, withCsrf } from './httpClient'
 
 const sessionPath = import.meta.env.VITE_AUTH_SESSION_PATH ?? '/api/v1/auth/me'
@@ -16,10 +16,6 @@ export const authApi = {
   register: async (name: string, email: string, password: string, csrfToken?: string) =>
     unwrapUser(await request<{ user: AuthUser }>('/api/v1/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password }) }, await withCsrf(csrfToken))),
   logout: async (csrfToken?: string) => request<null>('/api/v1/auth/logout', { method: 'POST' }, await withCsrf(csrfToken)),
-  pendingUsers: async (csrfToken?: string) => {
-    const result = await request<{ users: PendingUser[] }>(`${adminUsersPath}?status=pending`, {}, csrfToken)
-    return result.data.users
-  },
   setUserStatus: async (id: string, status: 'approved' | 'rejected', csrfToken?: string) =>
     unwrapUser(await request<{ user: AuthUser }>(`${adminUsersPath}/${id}/approval`, { method: 'PATCH', body: JSON.stringify({ status }) }, await withCsrf(csrfToken))),
 }

@@ -29,11 +29,11 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
-/** Keeps an already signed-in user off the login screen. */
+/** Keeps an already signed-in user off the login screen, landing them on their own dashboard: admins go to /admin, everyone else to the chat at /. */
 export function RedirectIfSignedIn({ children }: { children: ReactNode }) {
-  const { state, settled } = useSettledAuth()
+  const { state, user, settled } = useSettledAuth()
   if (!settled) return <AuthCheckingScreen />
-  if (state === 'authenticated') return <Navigate to="/" replace />
+  if (state === 'authenticated') return <Navigate to={user?.role === 'admin' ? '/admin' : '/'} replace />
   return <>{children}</>
 }
 
