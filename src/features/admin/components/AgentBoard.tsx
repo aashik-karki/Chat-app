@@ -26,7 +26,7 @@ const LoadMeter = ({ active, max }: { active: number; max: number }) => {
   const track = ratio >= 1 ? 'bg-danger/15' : ratio >= 0.8 ? 'bg-warning/15' : 'bg-primary/15'
   return (
     <span className="flex items-center gap-2" title={`${active} of ${max} chats`}>
-      <span className={cn('h-1.5 w-20 overflow-hidden rounded-full', track)} role="meter" aria-valuemin={0} aria-valuemax={max} aria-valuenow={active} aria-label="Open chats">
+      <span className={cn('h-1.5 w-12 overflow-hidden rounded-full sm:w-16 2xl:w-20', track)} role="meter" aria-valuemin={0} aria-valuemax={max} aria-valuenow={active} aria-label="Open chats">
         <span className={cn('block h-full rounded-full transition-[width]', tone)} style={{ width: `${ratio * 100}%` }} />
       </span>
       <span className="text-xs text-muted-foreground tabular-nums">
@@ -148,7 +148,7 @@ export function AgentBoard() {
             <TableCell colSpan={editing === agent.agentId ? 5 : 1}>
               <span className="flex items-center gap-2.5">
                 <Avatar name={agent.name} seed={agent.agentId} size="sm" presence={agent.status} />
-                <span className="min-w-0 max-w-[11rem]">
+                <span className="min-w-0 max-w-[9rem] 2xl:max-w-[11rem]">
                   <span className="block truncate text-[13px] font-medium text-foreground">{agent.name}</span>
                   <span className="block truncate text-xs text-muted-foreground">{agent.connected ? agent.email : formatLastSeen(agent.lastSeen)}</span>
                 </span>
