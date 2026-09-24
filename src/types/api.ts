@@ -32,6 +32,7 @@ export interface Conversation {
   id: string
   customer: { id: string; name: string; email: string }
   assignedAgentId: string | null
+  assignedAgent: { id: string; name: string } | null
   status: 'open' | 'closed'
   topic: ConversationTopic
   lastMessagePreview: string | null
