@@ -56,9 +56,9 @@ export function AdminUsersTable({ users, onDecide, onMakeAgent }: AdminUsersTabl
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead className="hidden md:table-cell">Email</TableHead>
+            <TableHead className="hidden xl:table-cell">Email</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="hidden sm:table-cell">Joined</TableHead>
+            <TableHead className="hidden lg:table-cell">Joined</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -70,16 +70,16 @@ export function AdminUsersTable({ users, onDecide, onMakeAgent }: AdminUsersTabl
                   <Avatar name={user.name} seed={user.id} size="sm" />
                   <span className="min-w-0">
                     <span className="block truncate text-[13px] font-medium text-foreground">{user.name}</span>
-                    <span className="block truncate text-xs text-muted-foreground md:hidden">{user.email}</span>
+                    <span className="block truncate text-xs text-muted-foreground xl:hidden">{user.email}</span>
                   </span>
                 </span>
               </TableCell>
-              <TableCell className="hidden text-[13px] text-muted-foreground md:table-cell">{user.email}</TableCell>
+              <TableCell className="hidden text-[13px] text-muted-foreground xl:table-cell">{user.email}</TableCell>
               <TableCell>
                 <Badge className={cn('capitalize', statusBadgeClass[user.status])}>{user.status}</Badge>
               </TableCell>
-              <TableCell className="hidden text-[13px] text-muted-foreground sm:table-cell">{formatJoinedDate(user.createdAt)}</TableCell>
-              <TableCell className="text-right">
+              <TableCell className="hidden text-[13px] whitespace-nowrap text-muted-foreground lg:table-cell">{formatJoinedDate(user.createdAt)}</TableCell>
+              <TableCell className="text-right whitespace-nowrap">
                 {user.status === 'pending' ? (
                   <span className="inline-flex gap-1.5">
                     <Button

@@ -128,7 +128,7 @@ export const TrendChart = ({ points, seriesLabel, previousLabel, height = 240, a
               <path d={toPath(points.map((p) => p.value), max)} fill="none" stroke="var(--chart-series)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
             </svg>
 
-            {point && (
+            {point && active !== null && (
               <>
                 <span className="pointer-events-none absolute inset-y-0 border-l border-dashed border-subtle" style={{ left: `${xOf(shown)}%` }} aria-hidden="true" />
                 <span
@@ -139,7 +139,7 @@ export const TrendChart = ({ points, seriesLabel, previousLabel, height = 240, a
                 <div
                   className={cn(
                     'pointer-events-none absolute top-1 z-10 flex w-max max-w-[220px] flex-col gap-1.5 rounded-xl border border-line bg-surface px-3.5 py-3 shadow-lg transition-opacity',
-                    active === null && 'opacity-0 sm:opacity-100',
+                    active === null && 'opacity-0',
                   )}
                   style={tipOnLeft ? { right: `calc(${100 - xOf(shown)}% + 12px)` } : { left: `calc(${xOf(shown)}% + 12px)` }}
                   aria-hidden="true"

@@ -160,7 +160,7 @@ export const AdminDashboardPage = () => {
           </div>
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.86fr)_minmax(0,1fr)]">
+        <div className="grid gap-5 xl:grid-cols-2">
           <DashboardCard
             id="agents"
             title={

@@ -44,12 +44,12 @@ export const MessagesCard = ({ analytics, live, stale, segments }: MessagesCardP
 
   return (
     <DashboardCard title="Messages" description={mode === 'daily' ? `All conversations, last ${analytics?.range.days ?? '…'} days` : 'Per minute, updates every 5 seconds'} action={tabs}>
-      <div className="flex flex-col gap-6 md:flex-row md:items-end">
-        <div className="flex shrink-0 flex-col gap-3 md:w-44 md:pb-10">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {headline === null ? (
-            <span className="h-11 w-32 animate-pulse rounded-lg bg-surface-2" />
+            <span className="h-10 w-32 animate-pulse rounded-lg bg-surface-2" />
           ) : (
-            <span className="text-[44px] leading-none font-bold tracking-tight text-fg tabular-nums">{formatCount(headline)}</span>
+            <span className="text-[40px] leading-none font-bold tracking-tight text-fg tabular-nums">{formatCount(headline)}</span>
           )}
           {mode === 'daily' && analytics ? (
             <span className="flex flex-wrap items-center gap-2 text-sm text-muted">
