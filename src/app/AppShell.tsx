@@ -4,6 +4,7 @@ import { ConnectionBanner, ConnectionPill } from '../components/ConnectionPill'
 import { Avatar } from '../components/ui/Avatar'
 import { IconButton } from '../components/ui/Button'
 import { useAuthStore } from '../features/auth/auth.store'
+import { AgentsRealtimeBridge } from '../features/agents/AgentsRealtimeBridge'
 import { ChatRealtimeBridge } from '../features/chat/ChatRealtimeBridge'
 import { cn } from '../lib/cn'
 import { toast } from '../stores/toast.store'
@@ -80,6 +81,7 @@ export const AppShell = () => {
         </div>
       </header>
       <ChatRealtimeBridge />
+      {user.role !== 'user' && <AgentsRealtimeBridge />}
       <ConnectionBanner />
       <main className="flex min-h-0 flex-1 flex-col">
         <Outlet />
