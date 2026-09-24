@@ -21,12 +21,14 @@ export const formatListTime = (iso: string | null) => {
 }
 
 /** "last seen 5 minutes ago" */
-export const formatLastSeen = (iso: string | null) => {
-  if (!iso) return 'offline'
+/** "just now", "5 minutes ago", "2 days ago". */
+export const formatAgo = (iso: string) => {
   const seconds = Math.round((new Date(iso).getTime() - Date.now()) / 1000)
   const abs = Math.abs(seconds)
-  if (abs < 60) return 'last seen just now'
-  if (abs < 3600) return `last seen ${relative.format(Math.round(seconds / 60), 'minute')}`
-  if (abs < 86_400) return `last seen ${relative.format(Math.round(seconds / 3600), 'hour')}`
-  return `last seen ${relative.format(Math.round(seconds / 86_400), 'day')}`
+  if (abs < 60) return 'just now'
+  if (abs < 3600) return relative.format(Math.round(seconds / 60), 'minute')
+  if (abs < 86_400) return relative.format(Math.round(seconds / 3600), 'hour')
+  return relative.format(Math.round(seconds / 86_400), 'day')
 }
+
+export const formatLastSeen = (iso: string | null) => (iso ? `last seen ${formatAgo(iso)}` : 'offline')

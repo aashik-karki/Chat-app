@@ -80,6 +80,16 @@ export interface MetricsUpdate {
   messagesPerMinute: Array<{ minute: string; messages: number }>
 }
 
+/** GET /api/v1/metrics/analytics — daily history for the dashboard (days counted in `range.timeZone`). */
+export interface Analytics {
+  range: { days: number; timeZone: string; from: string; to: string }
+  messages: { total: number; previousTotal: number; daily: Array<{ date: string; messages: number; previous: number }> }
+  /** Messages per weekday in the period, Sunday first. */
+  byWeekday: number[]
+  conversations: { closed: number; previousClosed: number }
+  generatedAt: string
+}
+
 /** Events the server pushes over Socket.IO. */
 export interface ServerEvents {
   'message:new': (message: Message) => void
