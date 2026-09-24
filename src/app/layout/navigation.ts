@@ -33,7 +33,6 @@ export const navigationFor = (role: User['role']): NavSection[] => {
           { label: 'Customers', to: '/admin#customers', icon: Users },
         ],
       },
-      { title: 'Developers', items: [{ label: 'API docs', to: '/api/docs', icon: BookOpen, external: true }] },
     ]
   if (role === 'agent') return [{ items: [{ label: 'Inbox', to: '/inbox', icon: Inbox, unreadBadge: true }] }]
   return []
