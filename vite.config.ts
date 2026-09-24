@@ -1,6 +1,10 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig, loadEnv } from 'vite'
+
+const dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -9,6 +13,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), tailwindcss()],
+    resolve: {
+      alias: {
+        '@': path.resolve(dirname, './src'), // shadcn/ui imports use "@/..."
+      },
+    },
     server: {
       port: 3000,
       // The dev server forwards API + Socket.IO calls to the backend, so the browser

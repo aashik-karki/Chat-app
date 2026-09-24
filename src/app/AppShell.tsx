@@ -4,6 +4,7 @@ import { ConnectionBanner, ConnectionPill } from '../components/ConnectionPill'
 import { Avatar } from '../components/ui/Avatar'
 import { IconButton } from '../components/ui/Button'
 import { useAuthStore } from '../features/auth/auth.store'
+import { ChatRealtimeBridge } from '../features/chat/ChatRealtimeBridge'
 import { cn } from '../lib/cn'
 import { toast } from '../stores/toast.store'
 import { useThemeStore } from '../stores/theme.store'
@@ -78,6 +79,7 @@ export const AppShell = () => {
           </IconButton>
         </div>
       </header>
+      <ChatRealtimeBridge />
       <ConnectionBanner />
       <main className="flex min-h-0 flex-1 flex-col">
         <Outlet />
