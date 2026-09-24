@@ -1,111 +1,160 @@
+@import 'tailwindcss';
+
+/* Dark mode is a class on <html> (set from the user's choice or the system setting). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Design tokens: one place to change colors; every component uses these names. */
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f1f3f6;
+  --line: #eceef2;
+  --fg: #0f172a;
+  --muted: #64748b;
+  --subtle: #94a3b8;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-fg: #ffffff;
+  --primary-soft: #eff4ff; /* selected nav item, soft buttons */
+  --bubble-own: #2563eb;
+  --bubble-own-fg: #ffffff;
+  --bubble-other: #ffffff;
+  --success: #16a34a;
+  --success-strong: #15803d; /* text on --success-soft */
+  --success-soft: #e8f7ee;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --danger-strong: #be123c;
+  --danger-soft: #ffe8ee;
+  /* Chart colors: validated for colour-blind separation + contrast vs --surface (dataviz validator). */
+  --chart-series: #2563eb;
+  --chart-2: #0d9488;
+  --chart-3: #ea580c;
+  --chart-muted: #94a3b8; /* comparison / "last period" line (always dashed) */
+  --chart-grid: #e8ebf0;
+  --chart-track: #eef0f4;
+  color-scheme: light;
+}
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+.dark {
+  --bg: #0b0f19;
+  --surface: #121826;
+  --surface-2: #1a2233;
+  --line: #232c3f;
+  --fg: #e8ecf4;
+  --muted: #9aa4b8;
+  --subtle: #64708a;
+  --primary: #60a5fa;
+  --primary-hover: #93c5fd;
+  --primary-fg: #0b0f19;
+  --primary-soft: #16233d;
+  --bubble-own: #2563eb;
+  --bubble-own-fg: #ffffff;
+  --bubble-other: #1a2233;
+  --success: #22c55e;
+  --success-strong: #4ade80;
+  --success-soft: #11291c;
+  --warning: #f59e0b;
+  --danger: #f87171;
+  --danger-strong: #fb7185;
+  --danger-soft: #2f1620;
+  --chart-series: #3b82f6; /* validated vs #121826 */
+  --chart-2: #0d9488;
+  --chart-3: #ea580c;
+  --chart-muted: #64708a;
+  --chart-grid: #1f2839;
+  --chart-track: #1f2839;
+  color-scheme: dark;
+}
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@theme inline {
+  --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-soft: var(--primary-soft);
+  --color-bubble-own: var(--bubble-own);
+  --color-bubble-own-fg: var(--bubble-own-fg);
+  --color-bubble-other: var(--bubble-other);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-chart-series: var(--chart-series);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-muted: var(--chart-muted);
+  --color-chart-track: var(--chart-track);
+  --color-success-strong: var(--success-strong);
+  --color-success-soft: var(--success-soft);
+  --color-danger-strong: var(--danger-strong);
+  --color-danger-soft: var(--danger-soft);
+  --color-chart-grid: var(--chart-grid);
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
+  /* shadcn/ui token names (src/components/shadcn), mapped onto the same design tokens
+     so shadcn components and the app's own UI kit look like one system, in light AND dark.
+     Note: "muted" is the app's secondary TEXT color, so shadcn files use bg-surface-2 instead of bg-muted. */
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--fg);
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-ring: var(--primary);
+  --color-primary-foreground: var(--primary-fg);
+  --color-secondary: var(--surface-2);
+  --color-secondary-foreground: var(--fg);
+  --color-accent: var(--surface-2);
+  --color-accent-foreground: var(--fg);
+  --color-muted-foreground: var(--muted);
+  --color-destructive: var(--danger);
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-bg font-sans text-fg antialiased;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
+@keyframes typing-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
   }
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
 }
