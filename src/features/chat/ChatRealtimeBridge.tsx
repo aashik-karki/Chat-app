@@ -5,6 +5,7 @@ import type { Message } from '../../types/api'
 import { useAuthStore } from '../auth/auth.store'
 import { presenceWatch, usePresenceStore } from '../presence/presence.store'
 import { isMySide } from './chat.types'
+import { chatApi } from './chat.api'
 import { useChatStore } from './chat.store'
 import { clearOutbox, flushOutbox, forgetReadReceipts } from './services/messaging'
 import { loadFirstPage } from './services/threads'
@@ -27,6 +28,35 @@ export const ChatRealtimeBridge = () => {
     const store = useChatStore.getState
     const me = () => useAuthStore.getState().user
 
+    /**
+     * Staff: an event about a conversation we don't have yet (e.g. a brand-new customer) → fetch it.
+     * Events that arrive WHILE that fetch runs can't be applied (nothing to patch yet), so we
+     * remember them and fetch once more afterwards — the newest server state always wins.
+     */
+    const fetching = new Map<string, { dirty: boolean }>()
+    const ensureKnown = (conversationId: string) => {
+      if (me()?.role === 'user') return
+      const inFlight = fetching.get(conversationId)
+      if (inFlight) {
+        inFlight.dirty = true
+        return
+      }
+      if (store().conversations[conversationId]) return
+      const state = { dirty: false }
+      fetching.set(conversationId, state)
+      const load = (): Promise<void> =>
+        chatApi.get(conversationId).then((conversation) => {
+          store().upsertConversations([conversation])
+          if (state.dirty) {
+            state.dirty = false
+            return load()
+          }
+        })
+      load()
+        .catch(() => undefined)
+        .finally(() => fetching.delete(conversationId))
+    }
+
     const isMine = (conversationId: string) => (message: Message) => {
       const conversation = store().conversations[conversationId]
       const user = me()
@@ -35,6 +65,7 @@ export const ChatRealtimeBridge = () => {
 
     const unsubscribers = [
       realtime.on('message:new', (message) => {
+        ensureKnown(message.conversationId)
         store().receive(message)
         const conversation = store().conversations[message.conversationId]
         if (conversation) store().patchConversation(message.conversationId, { lastMessagePreview: message.text, lastMessageAt: message.createdAt })
@@ -44,6 +75,7 @@ export const ChatRealtimeBridge = () => {
         if (userId !== me()?.id) store().setTyping(conversationId, userId, name, isTyping)
       }),
       realtime.on('conversation:updated', ({ conversationId, unreadCount, lastMessagePreview, lastMessageAt }) => {
+        ensureKnown(conversationId)
         store().patchConversation(conversationId, {
           unreadCount,
           ...(lastMessagePreview !== undefined ? { lastMessagePreview } : {}),
@@ -51,6 +83,7 @@ export const ChatRealtimeBridge = () => {
         })
       }),
       realtime.on('conversation:assigned', ({ conversationId, agentId, agentName, status: conversationStatus }) => {
+        ensureKnown(conversationId)
         store().patchConversation(conversationId, { assignedAgentId: agentId, status: conversationStatus })
         store().setAgentName(conversationId, agentName)
       }),
