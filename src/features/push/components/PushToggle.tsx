@@ -6,7 +6,7 @@ import { disablePush, enablePush, refreshPushState } from '../push.service'
 import { usePushStore } from '../push.store'
 
 /** Header bell: shows the notification state and the one action that makes sense for it. */
-export const PushToggle = () => {
+export const PushToggle = ({ shape = 'plain' }: { shape?: 'plain' | 'round' }) => {
   const { support, permission, subscribed, busy, serverError } = usePushStore()
   const [open, setOpen] = useState(false)
   const panel = useRef<HTMLDivElement>(null)
@@ -63,7 +63,7 @@ export const PushToggle = () => {
 
   return (
     <div className="relative" ref={panel}>
-      <IconButton label={on ? 'Notifications on' : 'Notifications'} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
+      <IconButton shape={shape} label={on ? 'Notifications on' : 'Notifications'} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
         <Icon size={18} className={cn(on && 'text-primary')} />
       </IconButton>
       {open && (

@@ -1,5 +1,5 @@
 import { http } from '../../lib/http'
-import type { MetricsUpdate, User } from '../../types/api'
+import type { Analytics, MetricsUpdate, User } from '../../types/api'
 
 export interface UserSummary {
   total: number
@@ -15,4 +15,6 @@ export const adminApi = {
   decide: (userId: string, status: 'approved' | 'rejected') => http.patch<{ user: User }>(`/api/v1/admin/users/${userId}/approval`, { status }),
   setRole: (userId: string, role: 'user' | 'agent') => http.patch<{ user: User }>(`/api/v1/admin/users/${userId}/role`, { role }),
   metrics: () => http.get<MetricsUpdate>('/api/v1/metrics/overview'),
+  /** Daily messages for the last `days` days (+ the period before), in the browser's time zone. */
+  analytics: (days: number, timeZone: string) => http.get<Analytics>(`/api/v1/metrics/analytics?days=${days}&tz=${encodeURIComponent(timeZone)}`),
 }

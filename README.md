@@ -1,6 +1,6 @@
 # HelpDesk Chat — frontend
 
-React 19 + TypeScript + Vite + Tailwind v4 + Zustand + Socket.IO client, for the
+React 19 + TypeScript + Vite + Tailwind v4 (Inter, blue theme, light/dark) + Zustand + Socket.IO client, for the
 [chat-backend](https://github.com/aashik-karki/Chat-app-backend) (Express, Socket.IO, MongoDB, Redis, BullMQ).
 Three roles: **customers** chat with support, **agents** work an inbox, **admins** see a live dashboard.
 
@@ -39,6 +39,7 @@ then click the bell in the header.
 | **Export JSON / CSV** | `chat/components/ExportMenu.tsx`: downloads the **full** history streamed by the server (not just loaded messages). |
 | **Read / delivered status** | ✓ sent · ✓✓ delivered · blue ✓✓ read; status only moves forward; a read receipt for message X marks every earlier own message read (`chat/chat.store.ts`). Per side: an agent opening a chat never marks a teammate's reply as read. |
 | **Web Push** | `public/sw.js` (push, notification click → focus + route, `pushsubscriptionchange`), `features/push`: permission only on click (never on load), clear states (on / off / blocked + how to unblock / unsupported), **iPhone/iPad** → "Add to Home Screen" (push only works for installed PWAs, iOS 16.4+), manifest + icons, subscription removed on logout, **background-tab local notifications** (the server skips push while the socket is connected). |
+| **Real-time metrics (admin dashboard)** | `features/admin`: live numbers over the socket every 5 s (`metrics:update`); message trends, busiest weekday and closed conversations from `GET /api/v1/metrics/analytics` in the browser's time zone (refreshed every minute); team capacity gauge and agent board update live from `agent:status`; CSV export of the daily series. Each card is its own component (`StatCard`, `MessagesCard`, `TrendChart`, `StatusSplit`, `WeekdayBars`, `CapacityGauge`, `PendingApprovals`, `DashboardCard`). |
 | **Scalable state management** | Zustand, one store per concern (`auth`, `chat` normalized by id, `presence`, `agents`, `push`, `connection`, `toast`); socket events are applied in one place per feature (`*RealtimeBridge.tsx`). |
 | **Error handling & feedback** | Every backend error code → a human sentence (`lib/errors.ts`); toasts with actions (Retry / Open); inline errors; CSRF auto-refresh + single retry (`lib/http.ts`). |
 
@@ -46,7 +47,7 @@ then click the bell in the header.
 
 ```
 src/
-  app/            router, route guards (by role), app shell, realtime provider
+  app/            router, route guards (by role), app shell (staff: sidebar + top bar), realtime provider
   lib/            http (cookies + CSRF), socket, errors, time/id helpers, shadcn cn()
   stores/         connection, toast, theme
   components/     ui/ (app UI kit), shadcn/ (card, table, badge, button), ConnectionPill

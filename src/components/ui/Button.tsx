@@ -42,12 +42,22 @@ export const Button = ({ variant = 'primary', size = 'md', loading, icon, classN
   </button>
 )
 
-export const IconButton = ({ label, className, children, ...rest }: ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) => (
+interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  label: string
+  /** 'round': bordered circle used in the top bar. */
+  shape?: 'plain' | 'round'
+}
+
+export const IconButton = ({ label, shape = 'plain', className, children, ...rest }: IconButtonProps) => (
   <button
     type="button"
     aria-label={label}
     title={label}
-    className={cn('inline-flex size-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:opacity-40', className)}
+    className={cn(
+      'inline-flex items-center justify-center text-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:opacity-40',
+      shape === 'round' ? 'size-11 rounded-full border border-line bg-surface text-fg' : 'size-9 rounded-lg',
+      className,
+    )}
     {...rest}
   >
     {children}
