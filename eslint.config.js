@@ -19,4 +19,15 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // shadcn/ui's own convention exports a `xxxVariants` cva() helper
+    // alongside each component (button.tsx, badge.tsx, ...) for reuse by
+    // other components — that's the one case react-refresh's "only export
+    // components" rule is meant to flag, so it's turned off just for this
+    // vendored folder rather than for app code.
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

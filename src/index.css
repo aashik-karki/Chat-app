@@ -1,18 +1,108 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-@theme {
-  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "DM Mono", ui-monospace, monospace;
-  --color-orbit: #7863d8;
-  --color-orbit-soft: #eeebfb;
-  --color-ink: #2c2935;
+/* Dark mode is a class on <html> (set from the user's choice or the system setting). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Design tokens: one place to change colors; every component uses these names. */
+:root {
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --surface-2: #f1f3f8;
+  --line: #e4e7ef;
+  --fg: #151827;
+  --muted: #5d6275;
+  --subtle: #9aa0b2;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-fg: #ffffff;
+  --bubble-own: #4f46e5;
+  --bubble-own-fg: #ffffff;
+  --bubble-other: #ffffff;
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #0d0f17;
+  --surface: #151823;
+  --surface-2: #1d2130;
+  --line: #2a2f41;
+  --fg: #eceef5;
+  --muted: #a3a9bd;
+  --subtle: #6b7188;
+  --primary: #818cf8;
+  --primary-hover: #a5b4fc;
+  --primary-fg: #0d0f17;
+  --bubble-own: #4f46e5;
+  --bubble-own-fg: #ffffff;
+  --bubble-other: #1d2130;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #f87171;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-bubble-own: var(--bubble-own);
+  --color-bubble-own-fg: var(--bubble-own-fg);
+  --color-bubble-other: var(--bubble-other);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
 }
 
 @layer base {
-  :root { font-synthesis:none; text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased; }
-  body { @apply m-0 min-w-80 bg-[#fcfcfd] font-sans text-[#2c2935]; }
-  button, input, textarea { font: inherit; }
-  button { @apply cursor-pointer; }
-  button:focus-visible, input:focus-visible, textarea:focus-visible { @apply outline-2 outline-offset-2 outline-orbit; }
-  #root { @apply min-h-svh; }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-bg font-sans text-fg antialiased;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes typing-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
