@@ -6,6 +6,12 @@ import { authApi } from './auth.api'
 
 type AuthStatus = 'checking' | 'anonymous' | 'authenticated'
 
+/** Work that must happen while the session is still valid (e.g. removing this browser's push subscription). */
+const beforeLogoutHooks: Array<() => Promise<void>> = []
+export const onBeforeLogout = (hook: () => Promise<void>) => {
+  beforeLogoutHooks.push(hook)
+}
+
 interface AuthState {
   status: AuthStatus
   user: User | null
@@ -52,6 +58,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     try {
+      await Promise.allSettled(beforeLogoutHooks.map((hook) => hook()))
       await authApi.logout()
     } finally {
       set({ status: 'anonymous', user: null })

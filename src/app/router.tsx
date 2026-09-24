@@ -7,7 +7,7 @@ import { RegisterPage } from '../features/auth/pages/RegisterPage'
 import { CustomerChatPage } from '../features/chat/pages/CustomerChatPage'
 import { AppShell } from './AppShell'
 import { NotFoundPage } from './NotFoundPage'
-import { GuestOnly, HomeRedirect, RequireAuth } from './RequireAuth'
+import { ConversationLinkRedirect, GuestOnly, HomeRedirect, RequireAuth } from './RequireAuth'
 
 export const router = createBrowserRouter([
   {
@@ -39,6 +39,6 @@ export const router = createBrowserRouter([
     ],
   },
   // Push notification links use /chat/:conversationId — send each role to the right place.
-  { path: '/chat/:conversationId', element: <RequireAuth />, children: [{ index: true, element: <HomeRedirect /> }] },
+  { path: '/chat/:conversationId', element: <RequireAuth />, children: [{ index: true, element: <ConversationLinkRedirect /> }] },
   { path: '*', element: <NotFoundPage /> },
 ])

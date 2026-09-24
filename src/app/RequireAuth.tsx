@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useLocation } from 'react-router'
+import { Navigate, Outlet, useLocation, useParams } from 'react-router'
 import { PageSpinner } from '../components/ui/Spinner'
 import { homePathFor, useAuthStore } from '../features/auth/auth.store'
 import type { Role } from '../types/api'
@@ -27,4 +27,12 @@ export const GuestOnly = () => {
 export const HomeRedirect = () => {
   const user = useAuthStore((state) => state.user)
   return <Navigate to={user ? homePathFor(user) : '/login'} replace />
+}
+
+/** Push-notification links are /chat/:conversationId: staff open it in the inbox, customers in their chat. */
+export const ConversationLinkRedirect = () => {
+  const user = useAuthStore((state) => state.user)
+  const { conversationId } = useParams()
+  if (!user) return <Navigate to="/login" replace />
+  return <Navigate to={user.role === 'user' ? '/chat' : `/inbox/${conversationId}`} replace />
 }

@@ -6,6 +6,9 @@ import { IconButton } from '../components/ui/Button'
 import { useAuthStore } from '../features/auth/auth.store'
 import { AgentsRealtimeBridge } from '../features/agents/AgentsRealtimeBridge'
 import { ChatRealtimeBridge } from '../features/chat/ChatRealtimeBridge'
+import { BackgroundNotifier } from '../features/push/BackgroundNotifier'
+import { PushPrompt } from '../features/push/components/PushPrompt'
+import { PushToggle } from '../features/push/components/PushToggle'
 import { cn } from '../lib/cn'
 import { toast } from '../stores/toast.store'
 import { useThemeStore } from '../stores/theme.store'
@@ -64,6 +67,7 @@ export const AppShell = () => {
 
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
           <ConnectionPill />
+          <PushToggle />
           <IconButton label="Toggle dark mode" onClick={toggleTheme}>
             <Sun size={18} className="hidden dark:block" />
             <Moon size={18} className="dark:hidden" />
@@ -81,8 +85,10 @@ export const AppShell = () => {
         </div>
       </header>
       <ChatRealtimeBridge />
+      <BackgroundNotifier />
       {user.role !== 'user' && <AgentsRealtimeBridge />}
       <ConnectionBanner />
+      <PushPrompt />
       <main className="flex min-h-0 flex-1 flex-col">
         <Outlet />
       </main>
